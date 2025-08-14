@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flashcards Offline Ultimate</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body>
+    <div id="app">
+        <header>
+            <h1>Flashcards Ultimate</h1>
+            <div class="top-controls">
+                <input type="text" id="search-bar" placeholder="🔎 Tìm kiếm thẻ, nhóm, trạng thái...">
+                <button id="theme-toggle-btn" class="header-btn" title="Chế độ Sáng/Tối" aria-label="Chuyển chế độ sáng hoặc tối">☀️</button>
+            </div>
+             <div class="theme-selector-container">
+                <select id="background-theme-selector" title="Chọn hình nền" aria-label="Chọn hình nền cho ứng dụng">
+                    <option value="default">Mặc định</option>
+                    <option value="black-cat">Mèo Đen</option>
+                    <option value="coffee-shop">Quán Cà Phê</option>
+                </select>
+            </div>
+            <div class="deck-controls">
+                <select id="deck-selector" title="Chọn bộ thẻ" aria-label="Chọn một bộ thẻ hoặc nhóm thẻ để học"></select>
+                <button id="add-deck-btn" class="header-btn" title="Thêm bộ thẻ mới" aria-label="Thêm bộ thẻ mới">➕</button>
+                <button id="edit-deck-btn" class="header-btn" title="Đổi tên bộ thẻ hiện tại" aria-label="Chỉnh sửa bộ thẻ hiện tại">✏️</button>
+                <button id="delete-deck-btn" class="header-btn" title="Xóa bộ thẻ hiện tại" aria-label="Xóa bộ thẻ hiện tại">🗑️</button>
+                <button id="shuffle-btn" class="header-btn" title="Xáo trộn thẻ" aria-label="Xáo trộn thứ tự thẻ">🔀</button>
+                <button id="merge-decks-btn" class="header-btn" title="Gộp các bộ thẻ" aria-label="Gộp nhiều bộ thẻ thành một nhóm">➕‍🤝‍➕</button>
+    		    <button id="unmerge-deck-btn" class="header-btn" title="Tách/Xóa nhóm này" aria-label="Xóa nhóm thẻ">➖</button>
+            </div>
+        </header>
+
+        <main>
+            <div id="progress-view">
+                <h2 id="progress-deck-name"></h2>
+                <div class="progress-stats">
+                    <div class="stat-item"><span id="not-studied-count">0</span><p>Chưa học</p></div>
+                    <div class="stat-item"><span id="learning-count">0</span><p>Đang học</p></div>
+                    <div class="stat-item"><span id="mastered-count">0</span><p>Thành thạo</p></div>
+                </div>
+                 <div class="main-actions">
+                    <button id="start-review-btn">Bắt đầu ôn tập</button>
+                    <button id="review-starred-btn">Ôn thẻ quan trọng (⭐️)</button>
+                    <button id="manage-cards-btn" class="secondary-action-btn">Quản lý thẻ</button>
+                    <button id="reset-deck-btn" class="secondary-action-btn danger">Reset tiến độ</button>
+                </div>
+                 <div class="data-management">
+                    <button id="show-stats-btn">📊 Xem Thống Kê</button>
+                    <button id="export-data-btn">📥 Xuất dữ liệu</button>
+                    <button id="import-data-btn">📤 Nhập dữ liệu</button>
+                    <input type="file" id="import-file-input" class="hidden" accept=".json">
+                </div>
+                 <div id="usage-tracker">
+                    Thời gian sử dụng hôm nay: <span id="usage-time">0 phút</span>
+                </div>
+            </div>
+
+            <div id="flashcard-view" class="hidden">
+                <div id="flashcard-container" class="card">
+                    <div class="card-actions-top">
+                        <button id="star-card-btn" title="Gắn dấu sao (S)" aria-label="Đánh dấu thẻ quan trọng">⭐️</button>
+                        <button id="edit-card-btn" title="Sửa thẻ này" aria-label="Chỉnh sửa thẻ">✏️</button>
+                        <button id="delete-card-btn" title="Xóa thẻ này" aria-label="Xóa thẻ">&times;</button>
+                    </div>
+                    <div class="card-inner">
+                        <div class="card-front"><p id="card-front-content"></p></div>
+                        <div class="card-back"><p id="card-back-content"></p></div>
+                    </div>
+                </div>
+                <div id="undo-container" class="hidden">
+                    <button id="undo-btn">↩️ Hoàn tác (Ctrl+Z)</button>
+                </div>
+                <div id="navigation-buttons">
+                    <button id="forgot-btn" class="nav-btn">⬅️ Đang học</button>
+                    <button id="known-btn" class="nav-btn">Thành thạo ➡️</button>
+                </div>
+                <div id="instructions">
+                    <p><b>Dấu cách:</b> Lật thẻ | <b>Mũi tên trái/phải:</b> Đánh giá</p>
+                </div>
+            </div>
+            
+            <div id="deck-completion-message" class="hidden">
+                <h2>🎉 Hoàn thành!</h2>
+                <p>Bạn đã ôn tập hết các thẻ trong phiên này.</p>
+                <button id="back-to-progress-btn">Quay về trang chính</button>
+            </div>
+
+             <div id="stats-view" class="hidden">
+                <h2>Thống Kê Chi Tiết</h2>
+                <p>Biểu đồ tiến độ học tập của bạn theo thời gian.</p>
+                <div class="chart-container">
+                    <canvas id="stats-chart"></canvas>
+                </div>
+                <button id="back-to-progress-from-stats-btn">Quay về trang chính</button>
+            </div>
+        </main>
+    </div>
+
+    <div id="modal-container" class="modal-container hidden">
+        <div class="modal-content">
+            <span id="close-modal-btn" class="close-button">&times;</span>
+            <h2 id="modal-title"></h2>
+            <div id="modal-deck-name-section">
+                <input type="text" id="modal-deck-name-input" placeholder="Tên bộ thẻ">
+            </div>
+            <div id="modal-card-data-section">
+                 <label for="excel-file-input" class="excel-label">Hoặc tải lên từ file Excel:</label>
+                 <input type="file" id="excel-file-input" accept=".xlsx, .xls">
+                 <textarea id="modal-card-data-input" rows="10" placeholder="Mặt trước - Mặt sau"></textarea>
+            </div>
+            <button id="modal-save-btn">Lưu</button>
+        </div>
+    </div>
+
+    <div id="merge-modal-container" class="modal-container hidden">
+        <div class="modal-content">
+            <span id="close-merge-modal-btn" class="close-button">&times;</span>
+            <h2>Tạo Nhóm Thẻ Gộp</h2>
+            <div id="modal-group-name-section">
+                <input type="text" id="modal-group-name-input" placeholder="Đặt tên cho nhóm mới">
+            </div>
+            <div id="merge-deck-list-section">
+                <p>Chọn ít nhất 2 bộ thẻ để gộp:</p>
+                <div id="merge-deck-list"></div>
+            </div>
+            <button id="modal-save-group-btn">Lưu Nhóm</button>
+        </div>
+    </div>
+
+    <div id="manage-cards-modal" class="modal-container hidden">
+        <div class="modal-content">
+            <span class="close-button" data-close-modal="manage-cards-modal">&times;</span>
+            <h2>Quản lý thẻ: <span id="manage-cards-deck-name"></span></h2>
+            <div id="card-list-container"></div>
+            <div class="modal-actions">
+                <button id="delete-selected-cards-btn" class="danger">Xóa các thẻ đã chọn</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="confirm-modal" class="modal-container hidden">
+        <div class="modal-content">
+            <h2 id="confirm-modal-title">Xác nhận</h2>
+            <p id="confirm-modal-text"></p>
+            <div class="modal-actions">
+                <button id="confirm-modal-cancel-btn" class="secondary-action-btn">Hủy</button>
+                <button id="confirm-modal-ok-btn" class="danger">Đồng ý</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
